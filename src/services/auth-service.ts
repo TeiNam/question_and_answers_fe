@@ -15,11 +15,11 @@ export const authService = {
     try {
       // Use axios directly to avoid interceptors for login
       const response = await axios.post<LoginResponse>(
-        `${API_URL}/api/v1/auth/login`, 
-        credentials,
-        { headers: { 'Content-Type': 'application/json' } }
+          `${API_URL}/api/v1/auth/login`,
+          credentials,
+          { headers: { 'Content-Type': 'application/json' } }
       );
-      
+
       return response.data;
     } catch (error: any) {
       // Handle specific error cases
@@ -30,7 +30,7 @@ export const authService = {
       } else if (!navigator.onLine) {
         throw new Error('Network error. Please check your internet connection.');
       }
-      
+
       throw new Error('Login failed. Please try again later.');
     }
   },
@@ -56,7 +56,7 @@ export const authService = {
       } else if (error.response && error.response.status === 409) {
         throw new Error('Email already exists. Please use a different email address.');
       }
-      
+
       throw error;
     }
   },
@@ -82,10 +82,43 @@ export const authService = {
    */
   updateProfile: async (data: ProfileUpdateData): Promise<User> => {
     try {
+      // Use a different endpoint for admin users if needed
       const response = await api.put('/api/v1/auth/me', data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Profile update failed:', error);
+
+      // Check for duplicate username error
+      if (error.response && error.response.status === 500) {
+        const errorMessage = error.response.data?.detail || '';
+        if (errorMessage.includes('Duplicate entry') && errorMessage.includes('user_username_UIDX')) {
+          throw new Error('Username already exists. Please choose a different username.');
+        }
+
+        // For 500 errors, try the admin update endpoint if it's a username update
+        if (data.username) {
+          try {
+            // Get current user to get the user_id
+            const currentUser = await authService.getCurrentUser();
+            // Use admin endpoint to update the username
+            const adminResponse = await api.put(`/api/v1/auth/users/${currentUser.user_id}/update`, data);
+            return adminResponse.data;
+          } catch (adminError: any) {
+            console.error('Admin profile update failed:', adminError);
+
+            // Check for duplicate username in admin update as well
+            if (adminError.response && adminError.response.data?.detail) {
+              const adminErrorMessage = adminError.response.data.detail;
+              if (adminErrorMessage.includes('Duplicate entry') && adminErrorMessage.includes('user_username_UIDX')) {
+                throw new Error('Username already exists. Please choose a different username.');
+              }
+            }
+
+            throw adminError;
+          }
+        }
+      }
+
       throw error;
     }
   },
@@ -97,8 +130,8 @@ export const authService = {
    */
   getUsers: async (role?: string): Promise<User[]> => {
     try {
-      const response = await api.get('/api/v1/auth/users', { 
-        params: { role } 
+      const response = await api.get('/api/v1/auth/users', {
+        params: { role }
       });
       return response.data;
     } catch (error) {

@@ -15,6 +15,7 @@ interface AuthContextType {
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -39,27 +40,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [token]);
 
-  // Fetch user data if token exists
+  // Function to fetch user data
+  const fetchUser = async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      setToken(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch of user data
   useEffect(() => {
-    const fetchUser = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
-        setToken(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUser();
   }, [token]);
+
+  // Function to refresh user data
+  const refreshUserData = async () => {
+    if (!token) return;
+
+    try {
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      throw error;
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -93,6 +109,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const updatedUser = await authService.updateProfile(data);
       setUser(updatedUser);
+
+      // If password was updated, force logout
+      if (data.password) {
+        setTimeout(() => {
+          logout();
+          toast.info('Please log in again with your new password');
+        }, 1500);
+      }
     } catch (error) {
       console.error('Profile update failed:', error);
       throw error;
@@ -105,22 +129,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isSolver = user?.role === 'solver';
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated,
-        isAdmin,
-        isCreator,
-        isSolver,
-        login,
-        register,
-        logout,
-        updateProfile,
-      }}
-    >
-      {!loading && children}
-    </AuthContext.Provider>
+      <AuthContext.Provider
+          value={{
+            user,
+            token,
+            isAuthenticated,
+            isAdmin,
+            isCreator,
+            isSolver,
+            login,
+            register,
+            logout,
+            updateProfile,
+            refreshUserData,
+          }}
+      >
+        {!loading && children}
+      </AuthContext.Provider>
   );
 };
 
