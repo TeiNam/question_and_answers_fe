@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, User, Lock, Shield, Award, BookOpen, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getRoleLabel, formatDate } from '../lib/utils';
 import AccountInfoCard from '../components/profile/AccountInfoCard';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import AccountDetailsForm from '../components/profile/AccountDetailsForm';
 import SecurityForm from '../components/profile/SecurityForm';
+import UserListComponent from '../components/profile/UserListComponent';
 
 // 프로필 폼 데이터 인터페이스
 interface ProfileFormData {
@@ -111,6 +109,7 @@ const Profile: React.FC = () => {
           <div className="md:col-span-1">
             <AccountInfoCard
                 user={user}
+                isAdmin={isAdmin}
                 isCreator={isCreator}
                 isSolver={isSolver}
             />
@@ -176,6 +175,9 @@ const Profile: React.FC = () => {
             </Card>
           </div>
         </div>
+
+        {/* User List Component for Administrators */}
+        {isAdmin && <UserListComponent />}
       </div>
   );
 };

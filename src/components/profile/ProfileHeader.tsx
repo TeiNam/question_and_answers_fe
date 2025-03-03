@@ -26,13 +26,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isAdmin, isCreator,
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-      <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor()}`}>
-        {getRoleIcon()}
-        {getRoleLabel(user.role)}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor()}`}>
+          {getRoleIcon()}
+          {isAdmin ? 'Administrator' : getRoleLabel(user.role)}
+        </div>
       </div>
-    </div>
   );
 };
 
